@@ -17,23 +17,30 @@
 #include <mutex>  // NOLINT
 #include <unordered_map>
 #include <vector>
+#include <utility>
 
 #include "common/config.h"
 #include "common/macros.h"
 
 namespace bustub {
 
-enum class AccessType { Unknown = 0, Get, Scan };
+enum class AccessType { Unknown = 0, Lookup, Scan, Index };
 
 class LRUKNode {
+ public:
+  friend class LRUKReplacer;
+  [[nodiscard]] LRUKNode(size_t k, std::list<frame_id_t>::iterator iter, bool is_evictable)
+      : k_(k), iter_(std::move(iter)), is_evictable_(is_evictable) {}
+
  private:
   /** History of last seen K timestamps of this page. Least recent timestamp stored in front. */
   // Remove maybe_unused if you start using them. Feel free to change the member variables as you want.
 
-  [[maybe_unused]] std::list<size_t> history_;
-  [[maybe_unused]] size_t k_;
-  [[maybe_unused]] frame_id_t fid_;
-  [[maybe_unused]] bool is_evictable_{false};
+  std::list<size_t> history_{};
+
+  size_t k_;
+  std::list<frame_id_t>::iterator iter_;
+  bool is_evictable_{false};
 };
 
 /**
@@ -44,7 +51,7 @@ class LRUKNode {
  * current timestamp and the timestamp of kth previous access.
  *
  * A frame with less than k historical references is given
- * +inf as its backward k-distance. When multipe frames have +inf backward k-distance,
+ * +inf as its backward k-distance. When multiple frames have +inf backward k-distance,
  * classical LRU algorithm is used to choose victim.
  */
 class LRUKReplacer {
@@ -150,12 +157,15 @@ class LRUKReplacer {
  private:
   // TODO(student): implement me! You can replace these member variables as you like.
   // Remove maybe_unused if you start using them.
-  [[maybe_unused]] std::unordered_map<frame_id_t, LRUKNode> node_store_;
-  [[maybe_unused]] size_t current_timestamp_{0};
-  [[maybe_unused]] size_t curr_size_{0};
-  [[maybe_unused]] size_t replacer_size_;
-  [[maybe_unused]] size_t k_;
-  [[maybe_unused]] std::mutex latch_;
+  std::unordered_map<frame_id_t, LRUKNode> node_store_;
+  std::list<frame_id_t> history_list_;
+  std::list<frame_id_t> cache_list_;
+
+  size_t current_timestamp_{0};
+  size_t curr_size_{0};
+  size_t replacer_size_;
+  size_t k_;
+  std::mutex latch_;
 };
 
 }  // namespace bustub
