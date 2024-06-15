@@ -74,7 +74,8 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
     new_root = root_->Clone();
   }
 
-  std::function<void(shared_ptr<TrieNode>, string_view)> put = [&value, &put](shared_ptr<TrieNode> r, string_view key) {
+  std::function<void(shared_ptr<TrieNode>, string_view)> put = [&value, &put](const shared_ptr<TrieNode> &r,
+                                                                              string_view key) {
     bool find = false;
     for (auto &[c, n] : r->children_) {
       if (key.at(0) == c) {
@@ -120,17 +121,17 @@ auto Trie::Remove(std::string_view key) const -> Trie {
     if (root_->is_value_node_) {
       if (root_->children_.empty()) {
         return {};
-      } else {
-        auto new_root = make_shared<TrieNode>(root_->children_);
-        return Trie{new_root};
       }
+      auto new_root = make_shared<TrieNode>(root_->children_);
+      return Trie{new_root};
     }
     return *this;
   }
 
   shared_ptr<TrieNode> new_root = root_->Clone();
 
-  std::function<bool(shared_ptr<TrieNode>, string_view)> remove = [&remove](shared_ptr<TrieNode> r, string_view key) {
+  std::function<bool(shared_ptr<TrieNode>, string_view)> remove = [&remove](const shared_ptr<TrieNode> &r,
+                                                                            string_view key) {
     for (auto &[k, v] : r->children_) {
       if (k != key.at(0)) {
         continue;
