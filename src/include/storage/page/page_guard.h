@@ -82,6 +82,14 @@ class BasicPageGuard {
   friend class ReadPageGuard;
   friend class WritePageGuard;
 
+  void CleanupState() {
+    bpm_ = nullptr;
+    page_ = nullptr;
+    is_dirty_ = false;
+  }
+
+  [[nodiscard]] auto HasValidState() const -> bool { return bpm_ && page_; }
+
   [[maybe_unused]] BufferPoolManager *bpm_{nullptr};
   Page *page_{nullptr};
   bool is_dirty_{false};

@@ -3,28 +3,77 @@
 
 namespace bustub {
 
-BasicPageGuard::BasicPageGuard(BasicPageGuard &&that) noexcept {}
+BasicPageGuard::BasicPageGuard(BasicPageGuard &&that) noexcept : BasicPageGuard(that.bpm_, that.page_) {
+  is_dirty_ = that.is_dirty_;
+  that.CleanupState();
+}
 
-void BasicPageGuard::Drop() {}
+void BasicPageGuard::Drop() {
+  if (HasValidState()) {
+    bpm_->UnpinPage(PageId(), is_dirty_);
+  }
+  CleanupState();
+}
 
-auto BasicPageGuard::operator=(BasicPageGuard &&that) noexcept -> BasicPageGuard & { return *this; }
+auto BasicPageGuard::operator=(BasicPageGuard &&that) noexcept -> BasicPageGuard & {
+  if (this != &that) {
+    if (HasValidState()) {
+      bpm_->UnpinPage(PageId(), is_dirty_);
+    }
 
-BasicPageGuard::~BasicPageGuard() {};  // NOLINT
+    bpm_ = that.bpm_;
+    page_ = that.page_;
+    is_dirty_ = that.is_dirty_;
 
-ReadPageGuard::ReadPageGuard(ReadPageGuard &&that) noexcept = default;
+    that.CleanupState();
+  }
+  return *this;
+}
 
-auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & { return *this; }
+BasicPageGuard::~BasicPageGuard() {  // NOLINT
+  Drop();
+}
 
-void ReadPageGuard::Drop() {}
+ReadPageGuard::ReadPageGuard(ReadPageGuard &&that) noexcept : guard_(std::move(that.guard_)) {}
 
-ReadPageGuard::~ReadPageGuard() {}  // NOLINT
+auto ReadPageGuard::operator=(ReadPageGuard &&that) noexcept -> ReadPageGuard & {
+  if (this != &that) {
+    Drop();
+    guard_ = std::move(that.guard_);
+  }
+  return *this;
+}
 
-WritePageGuard::WritePageGuard(WritePageGuard &&that) noexcept = default;
+void ReadPageGuard::Drop() {
+  if (guard_.HasValidState()) {
+    guard_.page_->RUnlatch();
+    guard_.Drop();
+  }
+}
 
-auto WritePageGuard::operator=(WritePageGuard &&that) noexcept -> WritePageGuard & { return *this; }
+ReadPageGuard::~ReadPageGuard() {  // NOLINT
+  Drop();
+}
 
-void WritePageGuard::Drop() {}
+WritePageGuard::WritePageGuard(WritePageGuard &&that) noexcept : guard_(std::move(that.guard_)) {}
 
-WritePageGuard::~WritePageGuard() {}  // NOLINT
+auto WritePageGuard::operator=(WritePageGuard &&that) noexcept -> WritePageGuard & {
+  if (this != &that) {
+    Drop();
+    this->guard_ = std::move(that.guard_);
+  }
+  return *this;
+}
+
+void WritePageGuard::Drop() {
+  if (guard_.HasValidState()) {
+    guard_.page_->WUnlatch();
+    guard_.Drop();
+  }
+}
+
+WritePageGuard::~WritePageGuard() {  // NOLINT
+  Drop();
+}
 
 }  // namespace bustub
