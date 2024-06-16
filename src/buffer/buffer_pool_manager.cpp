@@ -77,11 +77,12 @@ auto BufferPoolManager::FetchPage(page_id_t page_id, [[maybe_unused]] AccessType
 
   scoped_lock _{latch_};
   if (const auto iter = page_table_.find(page_id); iter != page_table_.end()) {
-    Page *p = &pages_[iter->second];
+    [[maybe_unused]] auto [pid, fid] = *iter;
+    Page *p = &pages_[fid];
     p->pin_count_++;
 
-    replacer_->RecordAccess(iter->second);
-    replacer_->SetEvictable(iter->second, false);
+    replacer_->RecordAccess(fid);
+    replacer_->SetEvictable(fid, false);
     return p;
   }
 
@@ -125,7 +126,9 @@ auto BufferPoolManager::UnpinPage(page_id_t page_id, bool is_dirty, [[maybe_unus
 
   scoped_lock _{latch_};
   if (auto iter = page_table_.find(page_id); iter != page_table_.end()) {
-    Page *p = &pages_[iter->second];
+    [[maybe_unused]] auto [pid, fid] = *iter;
+
+    Page *p = &pages_[fid];
     p->is_dirty_ |= is_dirty;
 
     if (p->GetPinCount() <= 0) {
@@ -133,7 +136,7 @@ auto BufferPoolManager::UnpinPage(page_id_t page_id, bool is_dirty, [[maybe_unus
     }
     p->pin_count_--;
     if (p->GetPinCount() == 0) {
-      replacer_->SetEvictable(iter->second, true);
+      replacer_->SetEvictable(fid, true);
     }
     return true;
   }
@@ -151,7 +154,9 @@ auto BufferPoolManager::FlushPage(page_id_t page_id) -> bool {
     return false;
   }
 
-  auto p = &pages_[iter->second];
+  [[maybe_unused]] auto [pid, fid] = *iter;
+
+  auto p = &pages_[fid];
   disk_manager_->WritePage(page_id, p->GetData());
   p->is_dirty_ = false;
   return true;
@@ -181,14 +186,16 @@ auto BufferPoolManager::DeletePage(page_id_t page_id) -> bool {
     return true;
   }
 
-  const auto p = &pages_[iter->second];
+  [[maybe_unused]] auto [pid, fid] = *iter;
+
+  const auto p = &pages_[fid];
   if (p->GetPinCount() > 0) {
     return false;
   }
 
   page_table_.erase(page_id);
-  free_list_.push_back(iter->second);
-  replacer_->Remove(iter->second);
+  free_list_.push_back(fid);
+  replacer_->Remove(fid);
 
   p->ResetMemory();
   p->page_id_ = INVALID_PAGE_ID;
