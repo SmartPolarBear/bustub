@@ -24,13 +24,13 @@
 
 namespace bustub {
 
-enum class AccessType { Unknown = 0, Lookup, Scan, Index };
+enum class AccessType { Unknown = 0, Get, Scan };
 
 class LRUKNode {
  public:
   friend class LRUKReplacer;
   [[nodiscard]] LRUKNode(size_t k, std::list<frame_id_t>::iterator iter, bool is_evictable)
-      : k_(k), iter_(std::move(iter)), is_evictable_(is_evictable) {}
+      : k_(k), iter_(iter), is_evictable_(is_evictable) {}
 
  private:
   /** History of last seen K timestamps of this page. Least recent timestamp stored in front. */

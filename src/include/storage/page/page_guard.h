@@ -88,7 +88,7 @@ class BasicPageGuard {
     is_dirty_ = false;
   }
 
-  [[nodiscard]] auto HasValidState() const -> bool { return bpm_ && page_; }
+  [[nodiscard]] auto HasValidState() const -> bool { return bpm_ != nullptr && page_ != nullptr; }
 
   [[maybe_unused]] BufferPoolManager *bpm_{nullptr};
   Page *page_{nullptr};
